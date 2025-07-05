@@ -3,13 +3,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Sevens Card Game v21</title>
+<title>Sevens Card Game</title>
 <style>
 body { font-family: sans-serif; text-align: center; margin: 20px; background: white; color: black; }
 #menu { margin-bottom: 20px; }
 #game { display: none; }
-#table { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-.suit { border: 1px solid #ccc; padding: 10px; min-height: 80px; }
+#table {
+  display: grid;
+  grid-template-rows: repeat(4, auto);
+  gap: 10px;
+  justify-items: center;
+}
 .hearts, .diamonds { color: red; }
 #log { height: 150px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 20px; padding: 5px; background: #f8f8f8; }
 #playerHand { margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; }
@@ -44,6 +48,33 @@ button { margin: 5px; }
   text-align: left;
 }
 .card:hover { box-shadow: 0 0 10px orange; border: 2px solid gold; }
+
+/* .cardSlot {
+  display: flex;
+}
+.cardSlot.left .card,
+.cardSlot.right .card {
+  transform: translateX(-50%);
+}
+.cardSlot.left .card:first-child,
+.cardSlot.right .card:first-child {
+  margin-left: 0;
+} */
+
+.cardSlot {
+  display: flex;
+}
+
+.cardSlot.left .card,
+.cardSlot.right .card {
+  margin-left: -35px; /* ~50% overlap for 70px card */
+}
+
+.cardSlot.left .card:first-child,
+.cardSlot.right .card:first-child {
+  margin-left: 0;
+}
+
 .red { color: red; }
 .black { color: black; }
 @media (prefers-color-scheme: dark) {
@@ -62,6 +93,7 @@ button { margin: 5px; }
   gap: 5px;
 }
 
+.suit { border: 1px solid #ccc; padding: 10px; min-height: 80px; }
 .suitRow {
   display: flex;
   justify-content: center;
@@ -70,32 +102,35 @@ button { margin: 5px; }
   position: relative;
   height: 110px;
 }
-
 .suitRow .cardSlot {
   position: relative;
   display: flex;
   align-items: center;
 }
-
-.suitRow .cardSlot .card {
+.suitRow .cardSlot {
+  display: flex;
+}
+suitRow .cardSlot .card {
   position: absolute;
   left: 0;
   transition: transform 0.3s;
 }
-
 .suitRow .cardSlot.left .card {
-  transform: translateX(-50%);
-}
-
-.suitRow .cardSlot.right .card {
   transform: translateX(50%);
 }
+.suitRow .cardSlot.right .card {
+  transform: translateX(-50%);
+}
+/* .suitRow .cardSlot.left .card:first-child,
+.suitRow .cardSlot.right .card:first-child {
+  margin-left: 0;
+} */
 
 </style>
 </head>
 <body>
 
-<h1>Sevens Prototype v21</h1>
+<h1>Sevens Prototype</h1>
 
 <div id="menu">
 <h2>Main Menu</h2>
@@ -160,7 +195,7 @@ function render(){
   document.getElementById('table').innerHTML = '';
 
   // For each suit, render as horizontal row with overlapping cards
-  for (let s of ['♠','♥','♦','♣']){
+  for (let s of ['♥','♠','♦','♣']){
     let row = document.createElement('div');
     row.className = 'suitRow';
 
@@ -188,14 +223,13 @@ function render(){
     for (let card of suitCards){
       let v = card.slice(0,-1);
       let cardDiv = renderCard(card, ()=>{});
+      cardDiv.style.zIndex = values.indexOf(v);
 
       if (v === '7'){
         centerSlot.appendChild(cardDiv);
       } else if (values.indexOf(v) < values.indexOf('7')){
-        // prepend lower cards (left side)
-        leftSlot.insertBefore(cardDiv, leftSlot.firstChild);
+        leftSlot.appendChild(cardDiv);
       } else {
-        // append higher cards (right side)
         rightSlot.appendChild(cardDiv);
       }
     }
@@ -212,14 +246,14 @@ function render(){
   document.getElementById('status').innerHTML = "Current turn: " + playerName(currentPlayerIndex);
 
   // Render player hand
-  if (currentPlayerIndex === 0){
+  //if (currentPlayerIndex === 0){
     document.getElementById('playerHand').innerHTML = '';
     for (let card of players[0]){
       document.getElementById('playerHand').appendChild(renderCard(card, ()=>playCard(card)));
     }
-  } else {
-    document.getElementById('playerHand').innerHTML = '<i>Waiting for your turn...</i>';
-  }
+  // } else {
+  //   document.getElementById('playerHand').innerHTML = '<i>Waiting for your turn...</i>';
+  // }
 }
 
 function getOrderedSuitCards(suit){
