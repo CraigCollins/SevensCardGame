@@ -61,19 +61,19 @@ button { margin: 5px; }
   margin-left: 0;
 } */
 
-.cardSlot {
+/* .cardSlot {
   display: flex;
 }
 
 .cardSlot.left .card,
 .cardSlot.right .card {
-  margin-left: -35px; /* ~50% overlap for 70px card */
+  margin-left: -35px;
 }
 
 .cardSlot.left .card:first-child,
 .cardSlot.right .card:first-child {
   margin-left: 0;
-}
+} */
 
 .red { color: red; }
 .black { color: black; }
@@ -102,25 +102,34 @@ button { margin: 5px; }
   position: relative;
   height: 110px;
 }
+
 .suitRow .cardSlot {
-  position: relative;
   display: flex;
   align-items: center;
 }
-.suitRow .cardSlot {
-  display: flex;
+
+.cardSlot.left {
+  justify-content: flex-end;
 }
-suitRow .cardSlot .card {
-  position: absolute;
-  left: 0;
-  transition: transform 0.3s;
+
+.cardSlot.right {
+  justify-content: flex-start;
 }
-.suitRow .cardSlot.left .card {
-  transform: translateX(50%);
+
+.cardSlot.left .card {
+  margin-right: -35px;
 }
-.suitRow .cardSlot.right .card {
-  transform: translateX(-50%);
+.cardSlot.right .card {
+  margin-left: -35px; /* ~50% overlap for 70px card */
 }
+
+.cardSlot.left .card:first-child {
+  margin-right: -35px;
+}
+.cardSlot.right .card:first-child {
+  margin-left: -35px;
+}
+
 /* .suitRow .cardSlot.left .card:first-child,
 .suitRow .cardSlot.right .card:first-child {
   margin-left: 0;
@@ -141,8 +150,6 @@ suitRow .cardSlot .card {
 <div id="game">
 <div id="status"></div>
 <div id="table"></div>
-<button onclick="toggleLog()">Toggle Log</button>
-<div id="log"></div>
 <div id="playerHand"></div>
 <button onclick="sortHand()">Sort Hand</button>
 
@@ -158,12 +165,16 @@ suitRow .cardSlot .card {
   <button onclick="setAcePlacement(false)">High</button>
 </div>
 
+<button onclick="toggleLog()">Toggle Log</button>
+<div id="log"></div>
+
 </div>
 
 <script>
 const suits = ['♥','♣','♦','♠'];
 const values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 let deck = [], players = [], table = {}, currentPlayerIndex = 0, numPlayers = 4, logVisible = true;
+toggleLog();
 let aceLow = null, giveTargetIndex = null, selectedGiveCard = null;
 
 function startGame(){
@@ -171,6 +182,7 @@ function startGame(){
   document.getElementById('menu').style.display = 'none';
   document.getElementById('game').style.display = 'block';
   init();
+  sortHand();
 }
 
 function init(){
@@ -199,11 +211,11 @@ function render(){
     let row = document.createElement('div');
     row.className = 'suitRow';
 
-    // Suit label
-    let suitLabel = document.createElement('div');
-    suitLabel.innerHTML = '<b>' + s + '</b>';
-    suitLabel.style.marginRight = '10px';
-    row.appendChild(suitLabel);
+    // // Suit label
+    // let suitLabel = document.createElement('div');
+    // suitLabel.innerHTML = '<b>' + s + '</b>';
+    // suitLabel.style.marginRight = '10px';
+    // row.appendChild(suitLabel);
 
     // Get cards sorted by value index
     let suitCards = table[s].slice().sort((a,b)=>{
