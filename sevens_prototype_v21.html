@@ -32,6 +32,17 @@ button { margin: 5px; }
   font-size: 20px;
   transition: box-shadow 0.3s, border 0.3s;
 }
+.card .top {
+  text-align: left;
+}
+.card .center {
+  text-align: center;
+  font-size: 30px;
+}
+.card .bottom {
+  transform: rotate(180deg);
+  text-align: left;
+}
 .card:hover { box-shadow: 0 0 10px orange; border: 2px solid gold; }
 .red { color: red; }
 .black { color: black; }
@@ -143,15 +154,26 @@ function getOrderedSuitCards(suit){
 }
 
 function renderCardHTML(card){
-  let color = (card.slice(-1) === '♥' || card.slice(-1) === '♦') ? 'red' : 'black';
-  return `<div class="card ${color}"><div class="top">${card}</div><div class="center">${card.slice(-1)}</div><div class="bottom">${card}</div></div>`;
+  let value = card.slice(0,-1);
+  let suit = card.slice(-1);
+  let color = (suit === '♥' || suit === '♦') ? 'red' : 'black';
+  return `<div class="card ${color}">
+    <div class="top">${value}${suit}</div>
+    <div class="center">${suit}</div>
+    <div class="bottom">${value}${suit}</div>
+  </div>`;
 }
 
 function renderCard(card, onclick){
+  let value = card.slice(0,-1);
+  let suit = card.slice(-1);
   let div = document.createElement('div');
-  div.className = 'card ' + ((card.slice(-1) === '♥' || card.slice(-1) === '♦') ? 'red' : 'black');
-  div.innerHTML = `<div class="top">${card}</div><div class="center">${card.slice(-1)}</div><div class="bottom">${card}</div>`;
-  div.onclick = onclick; return div;
+  div.className = 'card ' + ((suit === '♥' || suit === '♦') ? 'red' : 'black');
+  div.innerHTML = `<div class="top">${value}${suit}</div>
+                   <div class="center">${suit}</div>
+                   <div class="bottom">${value}${suit}</div>`;
+  div.onclick = onclick;
+  return div;
 }
 
 function log(msg){ document.getElementById('log').innerHTML += msg + '<br>'; }
