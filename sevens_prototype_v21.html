@@ -61,6 +61,36 @@ button { margin: 5px; }
   justify-content: center;
   gap: 5px;
 }
+
+.suitRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+  position: relative;
+  height: 110px;
+}
+
+.suitRow .cardSlot {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.suitRow .cardSlot .card {
+  position: absolute;
+  left: 0;
+  transition: transform 0.3s;
+}
+
+.suitRow .cardSlot.left .card {
+  transform: translateX(-50%);
+}
+
+.suitRow .cardSlot.right .card {
+  transform: translateX(50%);
+}
+
 </style>
 </head>
 <body>
@@ -126,18 +156,70 @@ function init(){
 }
 
 function render(){
+  // Clear table
   document.getElementById('table').innerHTML = '';
+
+  // For each suit, render as horizontal row with overlapping cards
   for (let s of ['♠','♥','♦','♣']){
-    let div = document.createElement('div');
-    div.className = 'suit ' + (s === '♥' ? 'hearts' : (s === '♦' ? 'diamonds' : ''));
-    div.innerHTML = '<b>' + s + '</b><br>' + getOrderedSuitCards(s).map(c => renderCardHTML(c)).join('');
-    document.getElementById('table').appendChild(div);
+    let row = document.createElement('div');
+    row.className = 'suitRow';
+
+    // Suit label
+    let suitLabel = document.createElement('div');
+    suitLabel.innerHTML = '<b>' + s + '</b>';
+    suitLabel.style.marginRight = '10px';
+    row.appendChild(suitLabel);
+
+    // Get cards sorted by value index
+    let suitCards = table[s].slice().sort((a,b)=>{
+      let va = values.indexOf(a.slice(0,-1));
+      let vb = values.indexOf(b.slice(0,-1));
+      return va - vb;
+    });
+
+    // Build card slots: left (lower than 7), center (7), right (higher than 7)
+    let leftSlot = document.createElement('div');
+    leftSlot.className = 'cardSlot left';
+    let centerSlot = document.createElement('div');
+    centerSlot.className = 'cardSlot center';
+    let rightSlot = document.createElement('div');
+    rightSlot.className = 'cardSlot right';
+
+    for (let card of suitCards){
+      let v = card.slice(0,-1);
+      let cardDiv = renderCard(card, ()=>{});
+
+      if (v === '7'){
+        centerSlot.appendChild(cardDiv);
+      } else if (values.indexOf(v) < values.indexOf('7')){
+        // prepend lower cards (left side)
+        leftSlot.insertBefore(cardDiv, leftSlot.firstChild);
+      } else {
+        // append higher cards (right side)
+        rightSlot.appendChild(cardDiv);
+      }
+    }
+
+    row.appendChild(leftSlot);
+    row.appendChild(centerSlot);
+    row.appendChild(rightSlot);
+
+    // Append full suit row to table
+    document.getElementById('table').appendChild(row);
   }
+
+  // Update current status
   document.getElementById('status').innerHTML = "Current turn: " + playerName(currentPlayerIndex);
+
+  // Render player hand
   if (currentPlayerIndex === 0){
     document.getElementById('playerHand').innerHTML = '';
-    for (let card of players[0]) document.getElementById('playerHand').appendChild(renderCard(card, ()=>playCard(card)));
-  } else document.getElementById('playerHand').innerHTML = '<i>Waiting for your turn...</i>';
+    for (let card of players[0]){
+      document.getElementById('playerHand').appendChild(renderCard(card, ()=>playCard(card)));
+    }
+  } else {
+    document.getElementById('playerHand').innerHTML = '<i>Waiting for your turn...</i>';
+  }
 }
 
 function getOrderedSuitCards(suit){
@@ -157,11 +239,14 @@ function renderCardHTML(card){
   let value = card.slice(0,-1);
   let suit = card.slice(-1);
   let color = (suit === '♥' || suit === '♦') ? 'red' : 'black';
-  return `<div class="card ${color}">
+  let div = document.createElement('div');
+  div.className = 'card ' + color;
+  div.innerHTML = `
     <div class="top">${value}${suit}</div>
     <div class="center">${suit}</div>
     <div class="bottom">${value}${suit}</div>
-  </div>`;
+  `;
+  return div;
 }
 
 function renderCard(card, onclick){
