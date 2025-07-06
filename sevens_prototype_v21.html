@@ -51,6 +51,12 @@
 
     button {
       margin: 5px;
+      font-size: 18px;
+    }
+
+    #startButton {
+      padding: 10px 20px;
+      font-size: 18px;
     }
 
     #status {
@@ -248,7 +254,20 @@
     <h2>Main Menu</h2>
     <label>Number of players (3-8): <input type="number" id="numPlayers" min="3" max="8" value="4"></label><br><br>
     <label>Point limit: <input type="number" id="pointLimit" min="1" max="500" value="100"></label><br><br>
-    <button onclick="startGame()">Start Game</button>
+    <button id="startButton" onclick="startGame()">Start Game</button>
+    <div id="rulesSection" style="text-align:left; margin:10px auto; max-width:400px;">
+      <h3>Game Rules</h3>
+      <p>
+        - The player with the 7♠ starts by playing it; play then continues clockwise.<br>
+        - Play cards in sequence outward from the 7.<br>
+        - <b>Spades are the leading suit</b>; no cards in other suits can be played until their matching rank in spades
+        is in play.<br>
+        - For cards lower than 7, the next higher card must be placed first.<br>
+        - For cards higher than 7, the next lower card must be placed first.<br>
+        - Aces are placed as high or low.<br>
+        - If you can't play or play an invalid card, you must take a card from the previous player and end your turn.
+      </p>
+    </div>
   </div>
 
   <div id="playerInfoBar"></div> <!-- NEW PLAYER INFO BAR -->
