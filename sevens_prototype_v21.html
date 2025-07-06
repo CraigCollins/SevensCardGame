@@ -99,6 +99,13 @@
       transition: box-shadow 0.3s, border 0.3s;
     }
 
+    .card.selected {
+      box-shadow: 0 0 10px orange;
+      border-color: gold;
+      outline: 2px solid gold;
+      outline-offset: -1px;
+    }
+
     .card:hover {
       box-shadow: 0 0 10px orange;
       border-color: gold;
@@ -240,6 +247,7 @@
   <div id="menu">
     <h2>Main Menu</h2>
     <label>Number of players (3-8): <input type="number" id="numPlayers" min="3" max="8" value="4"></label><br><br>
+    <label>Point limit: <input type="number" id="pointLimit" min="1" max="500" value="100"></label><br><br>
     <button onclick="startGame()">Start Game</button>
   </div>
 
@@ -270,16 +278,34 @@
   <script>
     const suits = ['♥', '♣', '♦', '♠'];
     const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    let deck = [], players = [], table = {}, currentPlayerIndex = 0, numPlayers = 4, logVisible = true;
+
+    // Add this near your global variables at the top
+    const aiNamesPool = [
+      "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth",
+      "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Sarah", "Charles", "Karen",
+      "Chris", "Nancy", "Daniel", "Lisa", "Matthew", "Betty", "Anthony", "Margaret", "Mark", "Sandra",
+      "Donald", "Ashley", "Steven", "Kimberly", "Paul", "Emily", "Andrew", "Donna", "Joshua", "Michelle",
+      "Kenneth", "Dorothy", "Kevin", "Carol", "Brian", "Amanda", "George", "Melissa", "Edward", "Deborah"
+    ];
+
+    let deck = [], players = [], aiNames = [], points = [], table = {}, currentPlayerIndex = 0, numPlayers = 4, logVisible = true;
+    let pointLimit = 100;
+    let roundNumber = 1;
     toggleLog();
     let aceLow = null, giveTargetIndex = null, selectedGiveCard = null;
 
     function startGame() {
       numPlayers = parseInt(document.getElementById('numPlayers').value);
+      pointLimit = parseInt(document.getElementById('pointLimit').value);
       document.getElementById('menu').style.display = 'none';
       document.getElementById('game').style.display = 'block';
+
+      // Initialize points array
+      points = new Array(numPlayers).fill(0);
+      // Shuffle names
+      aiNames = aiNamesPool.sort(() => Math.random() - 0.5).slice(0, numPlayers - 1);
+
       init();
-      sortHand();
     }
 
     function init() {
@@ -296,7 +322,8 @@
           log("Game starts with 7♠ played by " + playerName(i)); break;
         }
       }
-      render(); setTimeout(nextTurn, 1000);
+      sortHand();
+      render(); setTimeout(nextTurnAndCheckEndOfGame, 1000);
     }
 
     function render() {
@@ -318,8 +345,8 @@
 
         // Get cards sorted by value index
         let suitCards = table[s].slice().sort((a, b) => {
-          let va = values.indexOf(a.slice(0, -1));
-          let vb = values.indexOf(b.slice(0, -1));
+          let va = getIndexOfValueForCard(a.slice(0, -1));
+          let vb = getIndexOfValueForCard(b.slice(0, -1));
           return va - vb;
         });
 
@@ -334,12 +361,12 @@
         for (let card of suitCards) {
           let v = card.slice(0, -1);
           let cardDiv = renderCard(card, () => { });
-          cardDiv.style.zIndex = values.indexOf(v);
+          let iv = getIndexOfValueForCard(v);
+          cardDiv.style.zIndex = iv;
 
           if (v === '7') {
             centerSlot.appendChild(cardDiv);
-          } else if (values.indexOf(v) < values.indexOf('7')) {
-            //leftSlot.appendChild(cardDiv);
+          } else if (iv < values.indexOf('7')) {
             leftSlot.insertBefore(cardDiv, leftSlot.children[0]);
           } else {
             rightSlot.appendChild(cardDiv);
@@ -355,7 +382,8 @@
       }
 
       // Update current status
-      document.getElementById('status').innerHTML = "Current turn: " + playerName(currentPlayerIndex);
+      document.getElementById('status').innerHTML =
+        "Round " + roundNumber + " Current turn: " + playerName(currentPlayerIndex);
 
       // Render player hand
       //if (currentPlayerIndex === 0){
@@ -368,10 +396,17 @@
       // }
     }
 
+    function getIndexOfValueForCard(v) {
+      if (v === 'A') {
+        return aceLow ? 0 : values.length; // Treat Ace as 0 if low, else above King
+      }
+      return values.indexOf(v);
+    }
+
     function getOrderedSuitCards(suit) {
       let cards = table[suit].slice();
       cards.sort((a, b) => {
-        let ia = values.indexOf(a.slice(0, -1)), ib = values.indexOf(b.slice(0, -1));
+        let ia = getIndexOfValueForCard(a.slice(0, -1)), ib = getIndexOfValueForCard(b.slice(0, -1));
         if (aceLow === false) {
           if (a.slice(0, -1) === 'A') ia = values.length;
           if (b.slice(0, -1) === 'A') ib = values.length;
@@ -416,6 +451,7 @@
         div.innerHTML = `
           <div>${playerName(i)}</div>
           <div>${players[i].length} cards</div>
+          <div>Total Points: ${points[i]}</div>
         `;
         bar.appendChild(div);
       }
@@ -439,9 +475,20 @@
       let v = card.slice(0, -1), s = card.slice(-1), seq = table[s].map(c => c.slice(0, -1));
       if (v === '7') return true;
       if (seq.length === 0) return false;
-      let vi = values.indexOf(v);
+      let vi = getIndexOfValueForCard(v);
       let hasLower = seq.includes(values[vi - 1]), hasHigher = seq.includes(values[vi + 1]);
       if (s !== '♠' && !table['♠'].map(c => c.slice(0, -1)).includes(v)) return false;
+      if (v === 'A') {
+        if (aceLow === null) return seq.includes('2') || seq.includes('K');
+
+        if (aceLow === true) {
+          return seq.includes('2');
+        }
+
+        if (aceLow === false) {
+          return seq.includes('K');
+        }
+      }
       return hasLower || hasHigher;
     }
 
@@ -450,22 +497,22 @@
       if (!isValidPlay(card)) { log("You cannot play. Asking for a card."); askForCard(0); return; }
       let s = card.slice(-1);
       table[s].push(card); players[0] = players[0].filter(c => c !== card);
-      if (card === 'A♠') handleAcePlacement(true); else { log("You played " + card); nextTurn(); }
+      if (card === 'A♠') handleAcePlacement(true); else { log("You played " + card); nextTurnAndCheckEndOfGame(); }
     }
 
     function handleAcePlacement(isPlayer) {
       let seq = table['♠'].map(c => c.slice(0, -1));
       if (seq.includes('2') && seq.includes('K')) {
         if (isPlayer) document.getElementById('aceChoiceSection').style.display = 'block';
-        else { aceLow = Math.random() < 0.5; log("AI chose A♠ as " + (aceLow ? "low" : "high")); nextTurn(); }
-      } else { aceLow = seq.includes('2'); nextTurn(); }
+        else { aceLow = Math.random() < 0.5; log("AI chose A♠ as " + (aceLow ? "low" : "high")); nextTurnAndCheckEndOfGame(); }
+      } else { aceLow = seq.includes('2'); nextTurnAndCheckEndOfGame(); }
     }
 
     function setAcePlacement(low) {
       aceLow = low;
       document.getElementById('aceChoiceSection').style.display = 'none';
       log("You chose A♠ as " + (aceLow ? "low" : "high"));
-      nextTurn();
+      nextTurnAndCheckEndOfGame();
     }
 
     function askForCard(askerIndex) {
@@ -474,7 +521,7 @@
 
       if (giverHand.length === 0) {
         log(playerName(askerIndex) + " tried to ask " + playerName(giverIndex) + " for a card but they had none.");
-        nextTurn();
+        nextTurnAndCheckEndOfGame();
       }
       else if (giverIndex === 0 && askerIndex !== 0) {
         // AI asks Human ➔ Human chooses
@@ -483,7 +530,17 @@
         document.getElementById('giveOptions').innerHTML = '';
         selectedGiveCard = null;
         for (let card of players[0]) {
-          let div = renderCard(card, () => { selectedGiveCard = card; log("Selected " + card + " to give."); });
+          let div = renderCard(card, () => {
+            selectedGiveCard = card;
+            log("Selected " + card + " to give.");
+
+            // Remove highlight from all cards first
+            document.querySelectorAll('#giveOptions .card').forEach(c => c.classList.remove('selected'));
+
+            // Add highlight to this card
+            div.classList.add('selected');
+          });
+
           document.getElementById('giveOptions').appendChild(div);
         }
       }
@@ -494,7 +551,7 @@
         players[giverIndex] = giverHand.filter(c => c !== givenCard);
         players[askerIndex].push(givenCard);
         log(playerName(askerIndex) + " asks " + playerName(giverIndex) + " for a card. They receive " + givenCard + ".");
-        nextTurn();
+        nextTurnAndCheckEndOfGame();
       }
     }
 
@@ -504,10 +561,13 @@
       players[giveTargetIndex].push(selectedGiveCard);
       log("You gave " + selectedGiveCard + " to " + playerName(giveTargetIndex));
       document.getElementById('giveCardSection').style.display = 'none';
-      nextTurn();
+      nextTurnAndCheckEndOfGame();
     }
 
-    function nextTurn() {
+    function nextTurnAndCheckEndOfGame() {
+      // Check end of round if so do not proceed to next turn.
+      if (checkRoundEnd()) return;
+
       currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
       render();
       if (currentPlayerIndex !== 0) setTimeout(aiTurn, 1000);
@@ -518,10 +578,55 @@
       if (valids.length === 0) { askForCard(currentPlayerIndex); return; }
       let card = valids[Math.floor(Math.random() * valids.length)], s = card.slice(-1);
       table[s].push(card); players[currentPlayerIndex] = hand.filter(c => c !== card);
-      if (card === 'A♠') handleAcePlacement(false); else { log(playerName(currentPlayerIndex) + " plays " + card); nextTurn(); }
+      if (card === 'A♠') handleAcePlacement(false); else { log(playerName(currentPlayerIndex) + " plays " + card); nextTurnAndCheckEndOfGame(); }
     }
 
-    function playerName(index) { return index === 0 ? "Player" : "AI" + index; }
+    function playerName(index) { return index === 0 ? "Player" : aiNames[index - 1]; }
+
+    function checkRoundEnd() {
+      // Check if any player has 0 cards (round winner)
+      for (let i = 0; i < numPlayers; i++) {
+        if (players[i].length === 0) {
+          log(playerName(i) + " has won this round!");
+
+          // Add points to others
+          for (let j = 0; j < numPlayers; j++) {
+            if (j !== i) {
+              let total = 0;
+              for (let card of players[j]) {
+                let v = card.slice(0, -1);
+                if (['10', 'J', 'Q', 'K'].includes(v)) {
+                  total += 10;
+                } else if (v === 'A') {
+                  total += aceLow ? 5 : 15;
+                } else {
+                  total += 5; // number cards 2-9 are 5 points each
+                }
+              }
+              points[j] += total;
+            }
+          }
+
+          // Check for overall winner
+          let isPlayerAbovePointLimit = points.findIndex(p => p >= pointLimit);
+          if (isPlayerAbovePointLimit >= 0) {
+            let minPoints = Math.min(...points);
+            let winner = points.findIndex(p => p === minPoints);
+            log(playerName(winner) + " has the lowest points (" + points[winner] + ") and wins the game!");
+            // Optionally disable play or reset to menu
+            render();
+          } else {
+            // Start next round
+            roundNumber++;
+            log("Starting round " + roundNumber);
+            init(); // reinitialize game
+          }
+          return true; // round ended
+        }
+      }
+      return false; // round continues
+    }
+
   </script>
 
 </body>
