@@ -476,20 +476,20 @@
       if (v === '7') return true;
       if (seq.length === 0) return false;
       let vi = getIndexOfValueForCard(v);
-      let hasLower = seq.includes(values[vi - 1]), hasHigher = seq.includes(values[vi + 1]);
       if (s !== '♠' && !table['♠'].map(c => c.slice(0, -1)).includes(v)) return false;
       if (v === 'A') {
         if (aceLow === null) return seq.includes('2') || seq.includes('K');
-
-        if (aceLow === true) {
-          return seq.includes('2');
-        }
-
-        if (aceLow === false) {
-          return seq.includes('K');
-        }
+        if (aceLow === true) return seq.includes('2');
+        if (aceLow === false) return seq.includes('K');
       }
-      return hasLower || hasHigher;
+
+      if (vi < values.indexOf('7')) {
+        // For cards lower than 7, require the next higher card
+        return seq.includes(values[vi + 1]);
+      } else {
+        // For cards higher than 7, require the next lower card
+        return seq.includes(values[vi - 1]);
+      }
     }
 
     function playCard(card) {
